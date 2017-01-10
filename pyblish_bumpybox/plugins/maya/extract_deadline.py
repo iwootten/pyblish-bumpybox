@@ -4,6 +4,7 @@ import shutil
 import pyblish.api
 import pymel
 import pipeline_schema
+import ftrack
 
 
 class ExtractDeadline(pyblish.api.InstancePlugin):
@@ -23,7 +24,15 @@ class ExtractDeadline(pyblish.api.InstancePlugin):
             plugin_data = instance.data('deadlineData')['plugin'].copy()
 
         # setting optional data
-        job_data['Pool'] = 'medium'
+        pool = "medium"
+        try:
+            project = ftrack.Project(instance.context.data["ftrackData"]["Project"]["id"])
+            pool = project.get("department")
+        except:
+            import traceback
+            raise ValueError(traceback.format_exc())
+        job_data['Pool'] = pool
+        job_data['SecondaryPool'] = "medium"
 
         drg = pymel.core.PyNode('defaultRenderGlobals')
         if drg.currentRenderer.get() == 'arnold':

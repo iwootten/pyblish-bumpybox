@@ -2,6 +2,7 @@ import os
 
 import hou
 import pyblish.api
+import ftrack
 
 
 class AppendDeadlineDataBumpybox(pyblish.api.InstancePlugin):
@@ -22,7 +23,15 @@ class AppendDeadlineDataBumpybox(pyblish.api.InstancePlugin):
         name = os.path.basename(instance.context.data["currentFile"])
         name = os.path.splitext(name)[0]
         job_data["Name"] = name + " - " + str(instance)
-        job_data["Pool"] = "medium"
+        pool = "medium"
+        try:
+            project = ftrack.Project(instance.context.data["ftrackData"]["Project"]["id"])
+            pool = project.get("department")
+        except:
+            import traceback
+            raise ValueError(traceback.format_exc())
+        job_data['Pool'] = pool
+        job_data['SecondaryPool'] = "medium"
         version = hou.applicationVersion()
         job_data["Group"] = "houdini_{0}_{1}".format(version[0], version[1])
         job_data["LimitGroups"] = "houdini"

@@ -21,7 +21,14 @@ class ExtractDeadline(pyblish.api.Extractor):
         appVersion = context.data('kwargs')['data']['applicationVersion']
         appVersion = appVersion.split('.')[0]
         job_data['Group'] = 'tvpaint_%s' % appVersion
-        job_data['Pool'] = 'medium'
+        pool = "medium"
+        try:
+            project = ftrack.Project(instance.context.data["ftrackData"]["Project"]["id"])
+            pool = project.get("department")
+        except:
+            import traceback
+            raise ValueError(traceback.format_exc())
+        job_data['Pool'] = pool
         job_data['Plugin'] = 'TVPaint'
 
         # get output filename

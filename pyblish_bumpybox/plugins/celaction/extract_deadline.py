@@ -3,6 +3,7 @@ import os
 import pyblish.api
 import pyblish_standalone
 import pipeline_schema
+import ftrack
 
 
 class ExtractDeadline(pyblish.api.InstancePlugin):
@@ -24,7 +25,15 @@ class ExtractDeadline(pyblish.api.InstancePlugin):
                                         instance.data('end'))
         job_data['ChunkSize'] = 10
         job_data['Group'] = 'celaction'
-        job_data['Pool'] = 'medium'
+        pool = "medium"
+        try:
+            project = ftrack.Project(instance.context.data["ftrackData"]["Project"]["id"])
+            pool = project.get("department")
+        except:
+            import traceback
+            raise ValueError(traceback.format_exc())
+        job_data['Pool'] = pool
+        job_data['SecondaryPool'] = "medium"
         job_data['Plugin'] = 'CelAction'
 
         name = os.path.basename(instance.context.data["currentFile"])

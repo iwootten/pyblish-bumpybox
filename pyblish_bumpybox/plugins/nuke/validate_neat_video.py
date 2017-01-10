@@ -7,6 +7,7 @@ class ValidateNeatVideo(pyblish.api.Validator):
 
     families = ['deadline.render']
     label = 'Neat Video'
+    optional = True
 
     def process(self, context):
 

@@ -2,6 +2,7 @@ import os
 
 import pyblish.api
 import nuke
+import ftrack
 
 
 class ExtractDeadline(pyblish.api.Extractor):
@@ -29,9 +30,26 @@ class ExtractDeadline(pyblish.api.Extractor):
             job_data = instance.data('deadlineData')['job'].copy()
 
         # setting optional data
-        job_data['Pool'] = 'medium'
+        pool = "medium"
+        try:
+            project = ftrack.Project(instance.context.data["ftrackData"]["Project"]["id"])
+            pool = project.get("department")
+        except:
+            import traceback
+            raise ValueError(traceback.format_exc())
+        job_data['Pool'] = pool
+        job_data['SecondaryPool'] = "medium"
         job_data['ChunkSize'] = '10'
-        job_data['LimitGroups'] = 'nuke'
+
+        # Limit Groups
+        limit_groups = 'nuke'
+
+        for node in nuke.allNodes():
+            if node.Class().lower().startswith('ofxcom.absoft.neatvideo'):
+                limit_groups += ',neat_video'
+                break
+
+        job_data['LimitGroups'] = limit_groups
 
         group = 'nuke_%s' % nuke.NUKE_VERSION_STRING.split('.')[0]
         job_data['Group'] = group
