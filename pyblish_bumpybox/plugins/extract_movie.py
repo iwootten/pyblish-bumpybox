@@ -27,7 +27,7 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
         collection = instance.data.get("collection", [])
 
         if not list(collection):
-            msg = "Skipping \"{0}\" because no frames was found."
+            msg = "Skipping \"{0}\" because no frames were found."
             self.log.info(msg.format(instance.data["name"]))
             return
 
@@ -37,10 +37,24 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
             return
 
         output_file = collection.format("{head}0001.mov")
+        start_index = str(list(collection.indexes)[0])
+        input_collection = collection.format("{head}{padding}{tail}")
+
         args = [
             "ffmpeg", "-y", "-gamma", "2.2", "-framerate", "25",
-            "-start_number", str(list(collection.indexes)[0]),
-            "-i", collection.format("{head}{padding}{tail}"),
+            "-start_number", start_index,
+            "-i", input_collection
+        ]
+
+        if 'audio' in instance.context.data and instance.context.data['audio']['enabled']:
+            audio_file = instance.context.data['audio']['filename']
+            self.log.debug("Applying audio: {0}".format(audio_file))
+
+            args += [
+                "-i", audio_file
+            ]
+
+        args += [
             "-q:v", "0", "-pix_fmt", "yuv420p", "-vf",
             "scale=trunc(iw/2)*2:trunc(ih/2)*2,colormatrix=bt601:bt709",
             "-timecode", "00:00:00:01",
