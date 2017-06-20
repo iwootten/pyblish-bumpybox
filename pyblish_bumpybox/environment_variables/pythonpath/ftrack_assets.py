@@ -50,21 +50,22 @@ class CacheAsset(GenericAsset):
 
         if iAObj.options["connectSelection"]:
 
-            # Collect base names of nodes.
+            # Create a map of destination nodes
             dst_map = {}
             for node in pm.ls(selection, dagObjects=True):
                 node_basename = node.name().split(":")[-1]
                 dst_map[node_basename] = node
 
-            skip_nodes = []
             src_nodes = {}
 
+            # Create a map of source nodes
             for node in pm.ls(self.newData):
                 dst_name = node.name().split(":")[-1]
 
-                if node not in skip_nodes and dst_name in dst_map:
+                if node not in src_nodes.values() and dst_name in dst_map:
                     src_nodes[dst_name] = node
 
+            # Iterate and connect to mapped cache data
             for dst_name, src_node in src_nodes.iteritems():
                 dst_node = dst_map[dst_name]
 
@@ -77,8 +78,6 @@ class CacheAsset(GenericAsset):
                 # Connect animation and worldspace placement with blendshape
                 if dst_node.nodeType() == "mesh":
                     pm.blendShape(src_node, dst_node, weight=[(0, 1.0)], origin="world")
-
-                skip_nodes.append(dst_node)
 
     def changeVersion(self, iAObj=None, applicationObject=None):
         result = GenericAsset.changeVersion(self, iAObj, applicationObject)
