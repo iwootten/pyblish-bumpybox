@@ -15,7 +15,7 @@ class CacheAsset(GenericAsset):
         selection = pm.ls(selection=True)
 
         if os.path.splitext(iAObj.filePath)[1] not in [".abc"]:
-            raise ValueError("Uncognized file type.")
+            raise ValueError("Unrecognized file type.")
 
         namespace = iAObj.componentName
 
@@ -50,39 +50,34 @@ class CacheAsset(GenericAsset):
 
         if iAObj.options["connectSelection"]:
 
-            # Collect base names of nodes.
-            mapping = {}
+            # Create a map of destination nodes
+            dst_map = {}
             for node in pm.ls(selection, dagObjects=True):
-                mapping[node.name().split(":")[-1]] = node
+                node_basename = node.name().split(":")[-1]
+                dst_map[node_basename] = node
 
-            # Connect alembic nodes to selection.
-            alembic_node = pm.ls(self.newData, type="AlembicNode")[0]
-            alembic_connections = alembic_node.connections(
-                skipConversionNodes=True,
-                shapes=True,
-                destination=True,
-            )
-            attrs = ["translate", "rotate", "scale"]
-            skip_nodes = []
-            for src_node in alembic_connections:
-                dst_node = mapping.get(src_node.name().split(":")[-1], None)
+            src_nodes = {}
 
-                # If nodes has been processed, skip it.
-                if dst_node in skip_nodes:
-                    continue
+            # Create a map of source nodes
+            for node in pm.ls(self.newData):
+                dst_name = node.name().split(":")[-1]
 
-                if dst_node:
-                    if dst_node.nodeType() == "transform":
-                        for name in attrs:
-                            src_attr = pm.PyNode(src_node.name() + "." + name)
-                            dst_attr = pm.PyNode(dst_node.name() + "." + name)
-                            src_attr >> dst_attr
-                    if dst_node.nodeType() == "mesh":
-                        src_attr = pm.PyNode(src_node.name() + ".outMesh")
-                        dst_attr = pm.PyNode(dst_node.name() + ".inMesh")
+                if node not in src_nodes.values() and dst_name in dst_map:
+                    src_nodes[dst_name] = node
+
+            # Iterate and connect to mapped cache data
+            for dst_name, src_node in src_nodes.iteritems():
+                dst_node = dst_map[dst_name]
+
+                if dst_node.nodeType() == "transform":
+                    for transform in ["translate", "rotate", "scale"]:
+                        src_attr = pm.PyNode(src_node.name() + "." + transform)
+                        dst_attr = pm.PyNode(dst_node.name() + "." + transform)
                         src_attr >> dst_attr
 
-                    skip_nodes.append(dst_node)
+                # Connect animation and worldspace placement with blendshape
+                if dst_node.nodeType() == "mesh":
+                    pm.blendShape(src_node, dst_node, weight=[(0, 1.0)], origin="world")
 
     def changeVersion(self, iAObj=None, applicationObject=None):
         result = GenericAsset.changeVersion(self, iAObj, applicationObject)
@@ -208,6 +203,20 @@ class ImageSequenceAsset(GenericAsset):
             exp.expression.set(file_node.name() + ".frameExtension=frame")
 
             new_nodes.extend([file_node.name(), exp.name()])
+
+            # Connecting file node to color management in 2016+
+            if pm.objExists("defaultColorMgtGlobals"):
+                colMgmtGlob = pm.PyNode("defaultColorMgtGlobals")
+                mapping = {
+                    "cmEnabled": "colorManagementEnabled",
+                    "configFileEnabled": "colorManagementConfigFileEnabled",
+                    "configFilePath": "colorManagementConfigFilePath",
+                    "workingSpaceName": "workingSpace"
+                }
+                for key, value in mapping.iteritems():
+                    src_name = colMgmtGlob.name() + "." + key
+                    dst_name = file_node.name() + "." + value
+                    pm.PyNode(src_name) >> pm.PyNode(dst_name)
 
             texture = None
             if iAObj.options["fileNodeType"] != "Single Node":
