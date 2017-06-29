@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE hieroXML>
-<hieroXML version="10" revision="159" release="10.5v1" name="Hiero">
- <Project guid="{ba9eb7de-26cc-7146-a12b-b59ab35d5469}" floatLut="linear" ocioConfigName="custom" logLut="Cineon" workingSpace="linear" name="tags" timedisplayformat="0" starttimecode="86400" shotPresetName="Basic Nuke Shot With Annotations" redVideoDecodeMode="0" sixteenBitLut="sRGB" nukeUseOCIO="0" samplerate="48000/1" framerate="24/1" timelineReformatType="To Format" viewerLut="sRGB" ocioConfigCustom="0" thumbnailLut="sRGB" buildTrackName="VFX" ocioconfigpath="" timelineReformatCenter="1" useViewColors="0" editable="1" timelineReformatResizeType="Width" eightBitLut="sRGB">
+<hieroXML version="10" revision="13" release="10.0v5" name="Hiero">
+ <Project guid="{ba9eb7de-26cc-7146-a12b-b59ab35d5469}" floatLut="linear" logLut="Cineon" workingSpace="linear" ocioConfigName="custom" name="tags" timedisplayformat="0" starttimecode="86400" shotPresetName="Basic Nuke Shot With Annotations" redVideoDecodeMode="0" sixteenBitLut="sRGB" nukeUseOCIO="0" samplerate="48000/1" framerate="24/1" viewerLut="sRGB" ocioConfigCustom="0" thumbnailLut="sRGB" buildTrackName="VFX" ocioconfigpath="" useViewColors="0" editable="1" eightBitLut="sRGB">
   <items>
    <RootBinProjectItem editable="1" guid="{a3ba3ce5-8d61-6240-a7b3-b99e4a8bbe9d}" name="Sequences">
     <BinViewType>2</BinViewType>
@@ -67,6 +67,30 @@
      </TagClassProjectItem>
      <BinProjectItem editable="1" guid="{c26fe4a3-ea9b-e446-92c3-4f2d1e5c5c47}" name="task">
       <items>
+       <TagClassProjectItem editable="1" guid="{b5885be5-d09b-244b-b4a4-dec427a534a7}" name="Editing">
+        <TagClass editable="1" objName="tag" guid="4b652e43-47ef-6c4e-871d-18cdc3299f0f" visible="1" icon="icons:Tag.png" name="Editing">
+         <sets>
+          <Set title="" domainroot="tag">
+           <values>
+            <StringValue default="1" value="Editing" name="tag.label"/>
+            <StringValue default="1" value="task" name="tag.family"/>
+           </values>
+          </Set>
+         </sets>
+        </TagClass>
+       </TagClassProjectItem>
+       <TagClassProjectItem editable="1" guid="{2d8da183-0d62-344e-810f-133153ea9a42}" name="Blocking">
+        <TagClass editable="1" objName="tag" guid="9d6fb373-166a-684c-a5d2-d9d6bd6ca0ca" visible="1" icon="icons:Tag.png" name="Blocking">
+         <sets>
+          <Set title="" domainroot="tag">
+           <values>
+            <StringValue default="1" value="Blocking" name="tag.label"/>
+            <StringValue default="1" value="task" name="tag.family"/>
+           </values>
+          </Set>
+         </sets>
+        </TagClass>
+       </TagClassProjectItem>
        <TagClassProjectItem editable="1" guid="{eb2f8f5f-4e80-2046-9aa5-cf49e3f44dc2}" name="Tracking">
         <TagClass editable="1" objName="tag" guid="aa977a57-886d-ed4b-b91a-aeb1e25ddabc" visible="1" icon="icons:Tag.png" name="Tracking">
          <sets>
