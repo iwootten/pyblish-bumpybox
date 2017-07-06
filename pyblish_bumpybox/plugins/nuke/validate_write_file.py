@@ -1,6 +1,7 @@
 import os
 
 import pyblish.api
+import nuke
 
 
 class BumpyboxNukeRepairWriteFile(pyblish.api.Action):
@@ -62,8 +63,7 @@ class BumpyboxNukeValidateWriteFile(pyblish.api.InstancePlugin):
         assert os.path.exists(path), msg
 
     def get_expected_value(self, instance):
-
-        expected = "[python {nuke.script_directory()}]/workspace/"
+        expected = nuke.script_directory() + "/workspace/"
 
         current = instance[0]["file"].getEvaluatedValue()
         current_file = instance.context.data["currentFile"]
