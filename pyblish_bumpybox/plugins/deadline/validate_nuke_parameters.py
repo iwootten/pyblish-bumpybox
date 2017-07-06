@@ -37,6 +37,14 @@ class BumpyboxDeadlineRepairParameters(pyblish.api.Action):
             node.addKnob(knob)
 
             knob = nuke.String_Knob("deadlinePool", "Pool")
+            knob.setValue("medium")
+            node.addKnob(knob)
+
+            knob = nuke.String_Knob("deadlineGroup", "Group")
+            knob.setValue("nuke")
+            node.addKnob(knob)
+
+            knob = nuke.String_Knob("deadlineLimits", "Limits")
             node.addKnob(knob)
 
             knob = nuke.Int_Knob(
@@ -65,8 +73,14 @@ class BumpyboxDeadlineValidateNukeParameters(pyblish.api.InstancePlugin):
         msg = "Could not find Priority on node \"{0}\"".format(node)
         assert "deadlinePriority" in instance.data, msg
 
+        msg = "Could not find Group on node \"{0}\"".format(node)
+        assert "deadlineGroup" in instance.data, msg
+
         msg = "Could not find Pool on node \"{0}\"".format(node)
         assert "deadlinePool" in instance.data, msg
 
         msg = "Could not find Concurrent Tasks on node \"{0}\"".format(node)
         assert "deadlineConcurrentTasks" in instance.data, msg
+
+        msg = "Could not find Limits on node \"{0}\"".format(node)
+        assert "deadlineLimits" in instance.data, msg

@@ -39,15 +39,32 @@ class BumpyboxDeadlineCollectNukeParameters(pyblish.api.ContextPlugin):
                 msg = "No existing \"deadlinePriority\" parameter."
                 self.log.info(msg)
 
-            # Gettng pool
+            # Getting pool
             if "deadlinePool" in node.knobs():
                 value = node["deadlinePool"].getValue()
                 instance.data["deadlinePool"] = value
             else:
-                msg = "No existing \"deadlinePool\" parameter."
+                msg = "No existing \"deadlinePool\" parameter, defaulting to 'medium'"
+                instance.data["deadlinePool"] = "medium"
                 self.log.info(msg)
 
-            # Gettng concurrent tasks
+            # Getting group
+            if "deadlineGroup" in node.knobs():
+                value = node["deadlineGroup"].getValue()
+                instance.data["deadlineGroup"] = value
+            else:
+                msg = "No existing \"deadlineGroup\" parameter"
+                self.log.info(msg)
+
+            # Getting limits
+            if "deadlineLimits" in node.knobs():
+                value = node["deadlineLimits"].getValue()
+                instance.data["deadlineLimits"] = value
+            else:
+                msg = "No existing \"deadlineLimits\" parameter."
+                self.log.info(msg)
+
+            # Getting concurrent tasks
             if "deadlineConcurrentTasks" in node.knobs():
                 value = node["deadlineConcurrentTasks"].getValue()
                 instance.data["deadlineConcurrentTasks"] = value

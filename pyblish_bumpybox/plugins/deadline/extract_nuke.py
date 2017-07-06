@@ -17,7 +17,6 @@ class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        node = instance[0]
         collection = instance.data["collection"]
 
         data = instance.data.get("deadlineData", {"job": {}, "plugin": {}})
@@ -26,9 +25,11 @@ class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
         data["job"]["Plugin"] = "Nuke"
         data["job"]["Priority"] = int(instance.data["deadlinePriority"])
         data["job"]["Pool"] = instance.data["deadlinePool"]
+        data["job"]["Group"] = instance.data["deadlineGroup"]
         data["job"]["ConcurrentTasks"] = int(
             instance.data["deadlineConcurrentTasks"]
         )
+        data["job"]["LimitGroups"] = instance.data["deadlineLimits"]
 
         # Replace houdini frame padding with Deadline padding
         fmt = "{head}" + "#" * collection.padding + "{tail}"
