@@ -67,12 +67,14 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
 
         # Setup parent.
         parent = parents[0]
+
+        copy_path = list(path)
+
         if "--" in item.name():
             name_split = item.name().split("--")
 
             if len(name_split) == 2:
                 try:
-                    copy_path = list(path)
                     copy_path.append(name_split[0])
                     parent = ftrack.getSequence(copy_path)
                 except:
@@ -81,7 +83,6 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
 
             if len(name_split) == 3:
                 try:
-                    copy_path = list(path)
                     copy_path.append(name_split[0])
                     parent = ftrack.getSequence(copy_path)
                 except:
