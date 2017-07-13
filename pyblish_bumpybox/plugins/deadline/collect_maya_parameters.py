@@ -23,7 +23,7 @@ class BumpyboxDeadlineCollectMayaParameters(pyblish.api.ContextPlugin):
 
             node = instance[0]
 
-            # Gettng chunk size
+            # Getting chunk size
             try:
                 value = node.deadlineChunkSize.get()
                 instance.data["deadlineChunkSize"] = value
@@ -31,7 +31,7 @@ class BumpyboxDeadlineCollectMayaParameters(pyblish.api.ContextPlugin):
                 msg = "No existing \"deadlineChunkSize\" parameter."
                 self.log.warning(msg)
 
-            # Gettng priority
+            # Getting priority
             try:
                 value = node.deadlinePriority.get()
                 instance.data["deadlinePriority"] = value
@@ -39,7 +39,7 @@ class BumpyboxDeadlineCollectMayaParameters(pyblish.api.ContextPlugin):
                 msg = "No existing \"deadlinePriority\" parameter."
                 self.log.warning(msg)
 
-            # Gettng pool
+            # Getting pool
             try:
                 value = node.deadlinePool.get()
                 instance.data["deadlinePool"] = value
@@ -47,10 +47,26 @@ class BumpyboxDeadlineCollectMayaParameters(pyblish.api.ContextPlugin):
                 msg = "No existing \"deadlinePool\" parameter."
                 self.log.warning(msg)
 
-            # Gettng concurrent tasks
+            # Getting concurrent tasks
             try:
                 value = node.deadlineConcurrentTasks.get()
                 instance.data["deadlineConcurrentTasks"] = value
             except:
                 msg = "No existing \"deadlineConcurrentTasks\" parameter."
+                self.log.warning(msg)
+
+            # Getting groups
+            try:
+                value = node.deadlineGroup.get()
+                instance.data["deadlineGroup"] = value
+            except:
+                msg = "No existing \"deadlineGroup\" parameter."
+                self.log.warning(msg)
+
+            # Getting limits
+            try:
+                value = node.deadlineLimits.get()
+                instance.data["deadlineLimits"] = value
+            except:
+                msg = "No existing \"deadlineLimits\" parameter."
                 self.log.warning(msg)
