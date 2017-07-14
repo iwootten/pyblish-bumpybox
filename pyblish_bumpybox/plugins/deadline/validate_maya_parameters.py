@@ -30,7 +30,7 @@ class BumpyboxDeadlineRepairParameters(pyblish.api.Action):
             if not hasattr(node, "deadlineChunkSize"):
                 pymel.core.addAttr(node,
                                    longName="deadlineChunkSize",
-                                   defaultValue=1,
+                                   defaultValue=10,
                                    attributeType="long")
                 attr = pymel.core.Attribute(node.name() + ".deadlineChunkSize")
                 pymel.core.setAttr(attr, channelBox=True)
@@ -48,7 +48,7 @@ class BumpyboxDeadlineRepairParameters(pyblish.api.Action):
                                    longName="deadlinePool",
                                    dataType="string")
                 attr = pymel.core.Attribute(node.name() + ".deadlinePool")
-                pymel.core.setAttr(attr, channelBox=True)
+                pymel.core.setAttr(attr, "medium", channelBox=True)
 
             if not hasattr(node, "deadlineConcurrentTasks"):
                 pymel.core.addAttr(node,
@@ -59,6 +59,26 @@ class BumpyboxDeadlineRepairParameters(pyblish.api.Action):
                     node.name() + ".deadlineConcurrentTasks"
                 )
                 pymel.core.setAttr(attr, channelBox=True)
+
+            if not hasattr(node, "deadlineGroup"):
+                pymel.core.addAttr(node,
+                                   longName="deadlineGroup",
+                                   dataType="string")
+                attr = pymel.core.Attribute(
+                    node.name() + ".deadlineGroup"
+                )
+                pymel.core.setAttr(attr, "maya", channelBox=True)
+
+            if not hasattr(node, "deadlineLimits"):
+                current_renderer = pymel.core.getAttr("defaultRenderGlobals.currentRenderer")
+
+                pymel.core.addAttr(node,
+                                   longName="deadlineLimits",
+                                   dataType="string")
+                attr = pymel.core.Attribute(
+                    node.name() + ".deadlineLimits"
+                )
+                pymel.core.setAttr(attr, current_renderer, channelBox=True)
 
 
 class BumpyboxDeadlineValidateMayaParameters(pyblish.api.InstancePlugin):
@@ -85,3 +105,9 @@ class BumpyboxDeadlineValidateMayaParameters(pyblish.api.InstancePlugin):
 
         msg = "Could not find Concurrent Tasks on node \"{0}\"".format(node)
         assert "deadlineConcurrentTasks" in instance.data, msg
+
+        msg = "Could not find Group on node \"{0}\"".format(node)
+        assert "deadlineGroup" in instance.data, msg
+
+        msg = "Could not find Limit Groups on node \"{0}\"".format(node)
+        assert "deadlineLimits" in instance.data, msg

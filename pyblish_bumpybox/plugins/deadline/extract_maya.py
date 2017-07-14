@@ -33,6 +33,8 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
         data["job"]["Pool"] = instance.data["deadlinePool"]
         value = instance.data["deadlineConcurrentTasks"]
         data["job"]["ConcurrentTasks"] = value
+        data["job"]["LimitGroups"] = instance.data["deadlineLimits"]
+        data["job"]["Group"] = instance.data["deadlineGroup"]
 
         # Frame range
         render_globals = pymel.core.PyNode("defaultRenderGlobals")

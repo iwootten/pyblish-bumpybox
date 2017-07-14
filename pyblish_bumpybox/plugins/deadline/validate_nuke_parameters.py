@@ -29,7 +29,7 @@ class BumpyboxDeadlineRepairParameters(pyblish.api.Action):
             node.addKnob(nuke.Tab_Knob("Deadline"))
 
             knob = nuke.Int_Knob("deadlineChunkSize", "Chunk Size")
-            knob.setValue(1)
+            knob.setValue(10)
             node.addKnob(knob)
 
             knob = nuke.Int_Knob("deadlinePriority", "Priority")
