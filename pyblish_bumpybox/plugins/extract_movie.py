@@ -74,13 +74,7 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
 
         self.log.debug(output)
 
-        output_collection = clique.Collection(
-            head=collection.format("{head}"),
-            padding=4,
-            tail=".mov"
-        )
-        output_collection.add(output_file)
-
+        # The component name *must* be the default playable component for movie
         components = instance.data.get("ftrackComponentsList", [])
         components.append({
             "assettype_data": {"short": "mov"},
@@ -88,11 +82,9 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
                 "version": instance.context.data["version"]
             },
             "component_data": {
-                "name": instance.data.get(
-                    "component_name", instance.data["name"]
-                ),
+                "name": "main",
             },
-            "component_path": output_collection.format(),
+            "component_path": output_file,
             "component_overwrite": True,
         })
         instance.data["ftrackComponentsList"] = components
