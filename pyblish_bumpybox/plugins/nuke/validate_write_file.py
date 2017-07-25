@@ -66,8 +66,8 @@ class BumpyboxNukeValidateWriteFile(pyblish.api.InstancePlugin):
         padded_version = str(instance.context.data["version"]).zfill(3)
 
         expected = nuke.script_directory() + "/workspace/"
-        expected += instance[0].name() + "/"
         expected += "v" + padded_version + "/"
+        expected += instance[0].name() + "/"
         expected += os.path.splitext(os.path.basename(nuke.scriptName()))[0]
 
         current = nuke.filename(instance[0])
