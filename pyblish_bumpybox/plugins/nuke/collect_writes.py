@@ -21,7 +21,7 @@ class BumpyboxNukeCollectWrites(pyblish.api.ContextPlugin):
         remote_nodes = []
         for node in nuke.allNodes():
             if node.Class() == "BackdropNode":
-                if node.name().startswith("remote"):
+                if node.name().lower().startswith("remote"):
                     remote_nodes.extend(node.getNodes())
 
         remote_nodes = list(set(remote_nodes))
@@ -54,6 +54,7 @@ class BumpyboxNukeCollectWrites(pyblish.api.ContextPlugin):
             # Get frame range
             start_frame = int(nuke.root()["first_frame"].getValue())
             end_frame = int(nuke.root()["last_frame"].getValue())
+
             if node["use_limit"].getValue():
                 start_frame = int(node["first"].getValue())
                 end_frame = int(node["last"].getValue())
@@ -64,6 +65,7 @@ class BumpyboxNukeCollectWrites(pyblish.api.ContextPlugin):
                 path = ""
                 if nuke.filename(node):
                     path = nuke.filename(node)
+
                 path += " [{0}-{1}]".format(start_frame, end_frame)
                 collection = clique.parse(path)
             except Exception as e:
