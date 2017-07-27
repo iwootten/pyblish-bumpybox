@@ -19,8 +19,15 @@ class BumpyboxIntegrateFtrackCleanUp(pyblish.api.InstancePlugin):
 
         for data in instance.data.get("ftrackComponentsList", []):
             path = data["component_path"]
+
+            # Iterates all published components and removes those that
+            # are within collection
             if "component" in data and "workspace" in path:
-                collection = clique.parse(path)
-                for f in collection:
-                    os.remove(f)
-                    self.log.info("Deleted: \"{0}\"".format(f))
+                if os.path.exists(path):
+                    # This is a file component which needs removing
+                    os.remove(path)
+                else:
+                    collection = clique.parse(path)
+                    for f in collection:
+                        os.remove(f)
+                        self.log.info("Deleted: \"{0}\"".format(f))
