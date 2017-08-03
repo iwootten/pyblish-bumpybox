@@ -58,6 +58,8 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
                 data["job"]["ChunkSize"] = str(int(math.ceil(tasks / 5000.0)))
 
         # Setting plugin data
+        current_renderer = pymel.core.getAttr("defaultRenderGlobals.currentRenderer")
+
         data["plugin"]["Renderer"] = "file"
         data["plugin"]["UsingRenderLayers"] = 1
         data["plugin"]["RenderLayer"] = instance[0].name()
@@ -71,6 +73,12 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
         data["plugin"]["OutputFilePath"] = os.path.join(
             os.path.dirname(scene_file), "workspace"
         )
+
+        if current_renderer == "redshift":
+            data['plugin']['Renderer'] = 'redshift'
+            data['plugin']['RedshiftVerbose'] = 2
+            data["plugin"]["Animation"] = 1
+            data["plugin"]["StrictErrorChecking"] = 0
 
         # Arnold plugin settings
         if "arnold" in instance.data.get("families", []):
