@@ -48,6 +48,8 @@ class BumpyboxDeadlineOnJobSubmittedCollectMovie(pyblish.api.ContextPlugin):
         job_data["Frames"] = "{0}-{1}".format(job.JobFramesList[0],
                                               job.JobFramesList[-1])
         job_data["Name"] = job.Name
+        job_data["Group"] = "ffmpeg"
+        job_data["Pool"] = "medium"
         job_data["UserName"] = job.UserName
         job_data["ChunkSize"] = job.JobFramesList[-1] + 1
         job_data["JobDependency0"] = job.JobId
@@ -80,7 +82,8 @@ class BumpyboxDeadlineOnJobSubmittedCollectMovie(pyblish.api.ContextPlugin):
         plugin_data["InputArgs0"] = inputs_args
 
         if "audio" in instance.context.data:
-            plugin_data["InputFile1"] = instance.context.data["audio"]
+            plugin_data["InputFile1"] = instance.context.data["audio"]['filename']
+            plugin_data["ReplacePadding1"] = False
 
         output_args = "-q:v 0 -pix_fmt yuv420p -vf scale=trunc(iw/2)*2:"
         output_args += "trunc(ih/2)*2,colormatrix=bt601:bt709"
