@@ -1,118 +1,53 @@
-import os
-import subprocess
-
 import pyblish.api
-import clique
 
 
 class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
     """ Extracts movie from image sequence. """
 
     families = ["img"]
-    order = pyblish.api.ExtractorOrder + 0.1
+    order = pyblish.api.ExtractorOrder + 0.4
     label = "Movie"
     optional = True
-    active = False
+    active = True
 
     def process(self, instance):
 
-        if "remote" in instance.data.get("families", []):
+        if "remote" not in instance.data.get("families", []):
             return
 
-        if not self.check_executable("ffmpeg"):
-            msg = "Skipping movie extraction because \"ffmpeg\" wasn't found."
+        # skipping instance if data is missing
+        if "deadlineData" not in instance.data:
+            msg = "No deadlineData present. Skipping \"%s\"" % instance
             self.log.info(msg)
             return
 
-        collection = instance.data.get("collection", [])
-
-        if not list(collection):
-            msg = "Skipping \"{0}\" because no frames were found."
-            self.log.info(msg.format(instance.data["name"]))
-            return
-
-        if len(list(collection)) == 1:
-            msg = "Skipping \"{0}\" because only a single frame was found."
-            self.log.info(msg.format(instance.data["name"]))
-            return
+        collection = instance.data["collection"]
 
         output_file = collection.format("{head}0001.mov")
         start_index = str(list(collection.indexes)[0])
-        input_collection = collection.format("{head}{padding}{tail}")
 
-        args = [
-            "ffmpeg", "-y", "-gamma", "2.2", "-framerate", "25",
-            "-start_number", start_index,
-            "-i", input_collection
-        ]
+        job_data = instance.data["deadlineData"]["job"]
+
+        extra_info_key_value = {}
+
+        input_args = "-y -gamma 2.2 -framerate 25 -start_number {}".format(start_index)
+        extra_info_key_value["FFMPEGInputArgs0"] = input_args
+
+        input_file = job_data["OutputFilename0"].replace("####", "%04d")
 
         if 'audio' in instance.context.data and instance.context.data['audio']['enabled']:
             audio_file = instance.context.data['audio']['filename']
             self.log.debug("Applying audio: {0}".format(audio_file))
 
-            args += [
-                "-i", audio_file
-            ]
+            input_file += " -i " + audio_file.replace("\\", "/")
 
-        args += [
-            "-q:v", "0", "-pix_fmt", "yuv420p", "-vf",
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2,colormatrix=bt601:bt709",
-            "-timecode", "00:00:00:01",
-            output_file
-        ]
+        extra_info_key_value["FFMPEGInput0"] = input_file
 
-        self.log.debug("Executing args: {0}".format(args))
+        output_args = "-q:v 0 -pix_fmt yuv420p -vf scale=trunc(iw/2)*2:trunc(ih/2)*2,colormatrix=bt601:bt709 " \
+                      "-timecode 00:00:00:01"
 
-        # Can't use subprocess.check_output, cause Houdini doesn't like that.
-        p = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+        extra_info_key_value["FFMPEGOutputArgs0"] = output_args
+        extra_info_key_value["FFMPEGOutput0"] = output_file
 
-        output = p.communicate()[0]
+        instance.data["deadlineData"]["job"]["ExtraInfoKeyValue"] = extra_info_key_value
 
-        if p.returncode != 0:
-            raise ValueError(output)
-
-        self.log.debug(output)
-
-        # The component name *must* be the default playable component for movie
-        components = instance.data.get("ftrackComponentsList", [])
-        components.append({
-            "assettype_data": {"short": "mov"},
-            "assetversion_data": {
-                "version": instance.context.data["version"]
-            },
-            "component_data": {
-                "name": "main",
-            },
-            "component_path": output_file,
-            "component_overwrite": True,
-        })
-        instance.data["ftrackComponentsList"] = components
-
-    def check_executable(self, executable):
-        """ Checks to see if an executable is available.
-
-        Args:
-            executable (str): The name of executable without extension.
-
-        Returns:
-            bool: True for executable existance, False for non-existance.
-        """
-
-        def is_exe(fpath):
-            return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-        fpath, fname = os.path.split(executable)
-        if fpath:
-            if is_exe(executable):
-                return True
-        else:
-            for path in os.environ["PATH"].split(os.pathsep):
-                path = path.strip('"')
-                exe_file = os.path.join(path, executable)
-                if is_exe(exe_file):
-                    return True
-                if is_exe(exe_file + ".exe"):
-                    return True
-
-        return False
