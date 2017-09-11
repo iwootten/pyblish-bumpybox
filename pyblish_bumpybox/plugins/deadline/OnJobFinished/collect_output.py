@@ -14,8 +14,8 @@ class BumpyboxDeadlineOnJobFinishedCollectOutput(pyblish.api.ContextPlugin):
 
         job = context.data["deadlineJob"]
 
-        data = job.GetJobExtraInfoKeyValueWithDefault("PyblishInstanceData",
-                                                      "")
+        data = job.GetJobExtraInfoKeyValueWithDefault("PyblishInstanceData", "")
+
         if not data:
             return
 
