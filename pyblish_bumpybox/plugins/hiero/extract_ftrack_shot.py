@@ -1,7 +1,6 @@
-import traceback
-
 import pyblish.api
-import ftrack
+
+from bait.ftrack.query_runner import QueryRunner
 
 
 class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
@@ -12,112 +11,72 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
     match = pyblish.api.Subset
     label = "Ftrack Shot"
     optional = True
+    query_runner = QueryRunner()
 
-    def frames_to_timecode(self, frames, framerate):
+    def parse_shot_elements(self, item_name):
+        episode_name = False
+        sequence_name = False
+        shot_name = False
 
-        h = str(int(frames / (3600 * framerate))).zfill(2)
-        m = str(int(frames / (60 * framerate) % 60)).zfill(2)
-        s = int(float(frames) / framerate % 60)
-
-        return "%s:%s:%s" % (h, m, str(s).zfill(2))
-
-    def create_shot(self, parent, shot_name):
-        shot = None
-
-        try:
-            shot = parent.createShot(shot_name)
-
-            msg = "Creating new shot with name \"{}{}\".".format(parent, shot_name)
-            self.log.info(msg)
-        except:
-            self.log.error(traceback.format_exc())
-
-            path = []
-            try:
-                for p in reversed(parent.getParents()):
-                    path.append(p.getName())
-            except:
-                pass
-            path.append(parent.getName())
-            path.append(shot_name)
-            shot = ftrack.getShot(path)
-
-        return shot
-
-    def get_shot(self, path):
-        path_str = "/".join(path)
-
-        try:
-            shot = ftrack.getShot(path)
-            msg = "Found shot with id {} at path \"{}\".".format(shot.getId(), path_str)
-            self.log.info(msg)
-
-            return shot
-        except:
-            msg = "Didn't find shot with path \"{}\".".format(path_str)
-            self.log.info(msg)
-
-        return False
-
-    def path_to_shot(self, parents, item):
-        path = []
-        for p in parents:
-            path.append(p.getName())
-        path.reverse()
-
-        # Setup parent.
-        parent = parents[0]
-
-        copy_path = list(path)
-
-        if "--" in item.name():
-            name_split = item.name().split("--")
-
-            if len(name_split) == 2:
-                try:
-                    copy_path.append(name_split[0])
-                    parent = ftrack.getSequence(copy_path)
-                except:
-                    self.log.error(traceback.format_exc())
-                    parent = parents[0].createSequence(name_split[0])
+        if "--" in item_name:
+            name_split = item_name.split("--")
 
             if len(name_split) == 3:
-                try:
-                    copy_path.append(name_split[0])
-                    parent = ftrack.getSequence(copy_path)
-                except:
-                    self.log.error(traceback.format_exc())
-                    parent = parents[0].createEpisode(name_split[0])
+                episode_name = name_split[0]
+                sequence_name = name_split[1]
+                shot_name = name_split[2]
 
-                parents = [parent] + parents
+            if len(name_split) == 2:
+                sequence_name = name_split[0]
+                shot_name = name_split[1]
 
-                try:
-                    copy_path.append(name_split[1])
-                    parent = ftrack.getSequence(copy_path)
-                except:
-                    self.log.error(traceback.format_exc())
-                    parent = parents[0].createSequence(name_split[1])
+        return {
+            "episode_name": episode_name,
+            "sequence_name": sequence_name,
+            "shot_name": shot_name
+        }
 
-        return copy_path, parent
+    def filter_for_object(self, parent_list, entity_type):
+        return next((item for item in parent_list if 'object_type' in item and
+                    item['object_type']['name'] == entity_type), None)
+
+    def create_path_to_sequence(self, parents, shot_elements):
+        # First assign to project entity
+        project = parents[0]
+
+        episode = self.filter_for_object(parents, 'Episode')
+        sequence = self.filter_for_object(parents, 'Sequence')
+
+        if shot_elements['episode_name'] and project and not episode:
+            episode = self.query_runner.create("Episode", project, shot_elements['episode_name'])
+
+        if shot_elements['sequence_name'] and episode and not sequence:
+            sequence = self.query_runner.get_or_create_sequence(episode, shot_elements['sequence_name'])
+
+        return sequence
 
     def get_or_create_shot(self, instance):
 
         ftrack_data = instance.context.data("ftrackData")
-        task = ftrack.Task(ftrack_data["Task"]["id"])
-        parents = task.getParents()
+        task = self.query_runner.get_task(ftrack_data["Task"]["id"])
         item = instance[0]
 
-        path, parent = self.path_to_shot(parents, item)
+        shot_elements = self.parse_shot_elements(item.name())
 
-        shot_name = item.name()
+        parents = self.query_runner.get_parents(task)
 
-        if "--" in shot_name:
-            shot_name = shot_name.split("--")[-1]
+        self.log.info("Parents " + str(parents))
+        self.log.info("Shot elements " + str(shot_elements))
 
-        shot = self.get_shot(path + [shot_name])
+        if "ftrackSequence" not in instance.context.data:
+            sequence = self.create_path_to_sequence(parents, shot_elements)
 
-        if not shot:
-            shot = self.create_shot(parent, shot_name)
+            instance.context.data['ftrackSequence'] = sequence
+
+        sequence = instance.context.data("ftrackSequence")
+
+        # Setup all the parents to this task
+        shot = self.query_runner.get_or_create_shot(sequence, shot_elements['shot_name'])
 
         return shot
 
@@ -132,41 +91,45 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
                 metadata = tag.metadata()
 
                 if 'tag.id' in metadata:
-                    shot = ftrack.Shot(metadata["tag.id"])
+                    shot = self.query_runner.get_shot(metadata["tag.id"])
                 else:
                     shot = self.get_or_create_shot(instance)
 
-        instance.data["ftrackShotId"] = shot.getId()
+        instance.data["ftrackShotId"] = shot['id']
         instance.data["ftrackShot"] = shot
 
         # Store shot id on tag
         for tag in item.tags():
             if tag.name() == "ftrack":
-                tag.metadata().setValue("tag.id", shot.getId())
+                tag.metadata().setValue("tag.id", shot['id'])
 
         # Assign attributes to shot.
         sequence = item.parent().parent()
 
-        shot.set("fstart", value=1)
-        shot.set("fps", value=sequence.framerate().toFloat())
+        shot['custom_attributes']["fstart"] = 1
+        shot['custom_attributes']["fps"] = sequence.framerate().toFloat()
 
         duration = item.sourceOut() - item.sourceIn()
         duration = abs(int(round((abs(duration) + 1) / item.playbackSpeed())))
-        shot.set("fend", value=duration)
+        shot['custom_attributes']["fend"] = duration
 
         try:
             fmt = sequence.format()
-            shot.set("width", value=fmt.width())
-            shot.set("height", value=fmt.height())
+            shot['custom_attributes']["width"] = fmt.width()
+            shot['custom_attributes']["height"] = fmt.height()
         except Exception as e:
             self.log.warning("Could not set the resolution: " + str(e))
 
         # Get handles.
         handles = 0
+
         if "handles" in instance.data["families"]:
             for tag in instance.data["tagsData"]:
                 if "handles" == tag.get("tag.family", ""):
                     handles = int(tag["tag.value"])
+
         instance.data["handles"] = handles
 
-        shot.set("handles", value=handles)
+        shot['custom_attributes']["handles"] = handles
+
+        self.query_runner.commit()
