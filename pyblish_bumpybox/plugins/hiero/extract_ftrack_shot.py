@@ -40,40 +40,43 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
         return next((item for item in parent_list if 'object_type' in item and
                     item['object_type']['name'] == entity_type), None)
 
-    def create_path_to_shot(self, parents, shot_elements):
+    def create_path_to_sequence(self, parents, shot_elements):
         # First assign to project entity
         project = parents[0]
 
         episode = self.filter_for_object(parents, 'Episode')
         sequence = self.filter_for_object(parents, 'Sequence')
-        shot = self.filter_for_object(parents, 'Shot')
 
         if shot_elements['episode_name'] and project and not episode:
-            episode = self.query_runner.create_episode(project, shot_elements['episode_name'])
+            episode = self.query_runner.create("Episode", project, shot_elements['episode_name'])
 
         if shot_elements['sequence_name'] and episode and not sequence:
             sequence = self.query_runner.get_or_create_sequence(episode, shot_elements['sequence_name'])
 
-        if shot_elements['shot_name'] and sequence and not shot:
-            shot = self.query_runner.get_or_create_shot(sequence, shot_elements['shot_name'])
-
-        return shot
+        return sequence
 
     def get_or_create_shot(self, instance):
 
         ftrack_data = instance.context.data("ftrackData")
         task = self.query_runner.get_task(ftrack_data["Task"]["id"])
-
         item = instance[0]
 
         shot_elements = self.parse_shot_elements(item.name())
+
         parents = self.query_runner.get_parents(task)
 
         self.log.info("Parents " + str(parents))
         self.log.info("Shot elements " + str(shot_elements))
 
+        if "ftrackSequence" not in instance.context.data:
+            sequence = self.create_path_to_sequence(parents, shot_elements)
+
+            instance.context.data['ftrackSequence'] = sequence
+
+        sequence = instance.context.data("ftrackSequence")
+
         # Setup all the parents to this task
-        shot = self.create_path_to_shot(parents, shot_elements)
+        shot = self.query_runner.get_or_create_shot(sequence, shot_elements['shot_name'])
 
         return shot
 
