@@ -1,6 +1,5 @@
-import traceback
-
 import pyblish.api
+
 from bait.ftrack.query_runner import QueryRunner
 
 
@@ -13,29 +12,6 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
     label = "Ftrack Shot"
     optional = True
     query_runner = QueryRunner()
-
-    def create_shot(self, parent, shot_name):
-        shot = None
-
-        try:
-            shot = parent.createShot(shot_name)
-
-            msg = "Creating new shot with name \"{}{}\".".format(parent, shot_name)
-            self.log.info(msg)
-        except:
-            self.log.error(traceback.format_exc())
-
-            path = []
-            try:
-                for p in reversed(parent.getParents()):
-                    path.append(p.getName())
-            except:
-                pass
-            path.append(parent.getName())
-            path.append(shot_name)
-            shot = ftrack.getShot(path)
-
-        return shot
 
     def parse_shot_elements(self, item_name):
         episode_name = False
@@ -64,24 +40,22 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
         return next((item for item in parent_list if 'object_type' in item and
                     item['object_type']['name'] == entity_type), None)
 
-    def create_path(self, parents, shot_elements):
+    def create_path_to_shot(self, parents, shot_elements):
         # First assign to project entity
-        parent = parents[0]
+        project = parents[0]
 
         episode = self.filter_for_object(parents, 'Episode')
         sequence = self.filter_for_object(parents, 'Sequence')
         shot = self.filter_for_object(parents, 'Shot')
 
-        if shot_elements['episode_name'] and not episode:
-            # This sequence includes an episode
-            parent = self.query_runner.create_episode(parent, shot_elements['episode_name'])
+        if shot_elements['episode_name'] and project and not episode:
+            episode = self.query_runner.create_episode(project, shot_elements['episode_name'])
 
-        if shot_elements['sequence_name'] and not sequence:
-            # This is a sequence
-            parent = self.query_runner.create_sequence(parent, shot_elements['sequence_name'])
+        if shot_elements['sequence_name'] and episode and not sequence:
+            sequence = self.query_runner.get_or_create_sequence(episode, shot_elements['sequence_name'])
 
-        if shot_elements['shot_name'] and not shot:
-            shot = self.query_runner.create_shot(parent, shot_elements['shot_name'])
+        if shot_elements['shot_name'] and sequence and not shot:
+            shot = self.query_runner.get_or_create_shot(sequence, shot_elements['shot_name'])
 
         return shot
 
@@ -92,12 +66,14 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
 
         item = instance[0]
 
-        parents = self.query_runner.get_parents(task["id"])
-
         shot_elements = self.parse_shot_elements(item.name())
+        parents = self.query_runner.get_parents(task)
+
+        self.log.info("Parents " + str(parents))
+        self.log.info("Shot elements " + str(shot_elements))
 
         # Setup all the parents to this task
-        shot = self.create_path(parents, shot_elements)
+        shot = self.create_path_to_shot(parents, shot_elements)
 
         return shot
 
@@ -122,7 +98,7 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
         # Store shot id on tag
         for tag in item.tags():
             if tag.name() == "ftrack":
-                tag.metadata().setValue("tag.id", shot.getId())
+                tag.metadata().setValue("tag.id", shot['id'])
 
         # Assign attributes to shot.
         sequence = item.parent().parent()
@@ -153,4 +129,4 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
 
         shot['custom_attributes']["handles"] = handles
 
-        self.query_runner.session.commit()
+        self.query_runner.commit()
