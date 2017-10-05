@@ -13,8 +13,10 @@ class CollectScene(pyblish.api.ContextPlugin):
         current_file = context.data('currentFile')
         current_dir = os.path.dirname(current_file)
         publish_dir = os.path.join(current_dir, 'publish')
-        publish_file = os.path.join(publish_dir,
-                                    os.path.basename(current_file))
+        publish_file = os.path.join(publish_dir, os.path.basename(current_file))
+
+        self.log.info("Current file: {}".format(current_file))
+        self.log.info("Publish file: {}".format(publish_file))
 
         # create instance
         name = os.path.basename(current_file)
@@ -31,8 +33,11 @@ class CollectScene(pyblish.api.ContextPlugin):
         ftrack_data = context.data('ftrackData')
 
         host = pyblish.api.current_host()
-        components = {'%s_publish' % host: {'path': publish_file}}
-        components['%s_work' % host] = {'path': current_file}
+
+        components = {
+            '%s_publish' % host: {'path': publish_file},
+            '%s_work' % host: {'path': current_file}
+        }
 
         instance.set_data('ftrackComponents', value=components)
         instance.set_data('ftrackAssetType', value='scene')
