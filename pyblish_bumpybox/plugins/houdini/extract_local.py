@@ -9,7 +9,7 @@ class ExtractLocal(pyblish.api.InstancePlugin):
 
     families = ["img.local.*", "cache.local.*"]
     order = pyblish.api.ExtractorOrder
-    label = "Local"
+    label = "Extract Local"
     optional = True
 
     def process(self, instance):

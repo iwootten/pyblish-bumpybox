@@ -10,7 +10,7 @@ class IntegrateLocal(pyblish.api.InstancePlugin):
     """ Integrates local output """
 
     families = ["img.local.*", "cache.local.*"]
-    label = "Local"
+    label = "Integrate Local"
     order = pyblish.api.IntegratorOrder
     optional = True
 
