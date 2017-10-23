@@ -2,6 +2,8 @@ import math
 
 import nuke
 import pyblish.api
+import os
+from bait.paths import get_output_path
 
 
 class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
@@ -33,7 +35,17 @@ class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
 
         # Replace houdini frame padding with Deadline padding
         fmt = "{head}" + "#" * collection.padding + "{tail}"
-        data["job"]["OutputFilename0"] = collection.format(fmt)
+        output_sequence = os.path.basename(collection.format(fmt))
+
+        task_id = instance.context.data["ftrackData"]["Task"]["id"]
+        component_name = instance.data["name"]
+        version = instance.context.data["version"]
+        _, ext = os.path.splitext(output_sequence)
+
+        output_file = get_output_path(task_id, component_name, version, ext)
+        output_folder = os.path.dirname(output_file)
+
+        data["job"]["OutputFilename0"] = os.path.join(output_folder, output_sequence)
 
         # Get frame range
         node = instance[0]

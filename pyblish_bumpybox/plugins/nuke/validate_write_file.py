@@ -2,6 +2,7 @@ import os
 
 import pyblish.api
 import nuke
+from bait.paths import get_output_path
 
 
 class BumpyboxNukeRepairWriteFile(pyblish.api.Action):
@@ -63,32 +64,25 @@ class BumpyboxNukeValidateWriteFile(pyblish.api.InstancePlugin):
         assert os.path.exists(path), msg
 
     def get_expected_value(self, instance):
-        padded_version = str(instance.context.data["version"]).zfill(3)
-
-        expected = nuke.script_directory() + "/workspace/"
-        expected += "v" + padded_version + "/"
-        expected += instance[0].name() + "/"
-        expected += os.path.splitext(os.path.basename(nuke.scriptName()))[0]
+        task_id = instance.context.data["ftrackData"]["Task"]["id"]
+        component_name = instance[0].name()
+        version = instance.context.data["version"]
 
         current = nuke.filename(instance[0])
 
-        # Default padding starting at 4 digits.
-        padding = 4
-        if instance.data["collection"]:
-            padding = instance.data["collection"].padding
-        # Can't have less than 4 digits.
-        if padding < 4:
-            padding = 4
-
         # Extension, defaulting to exr files.
-        ext = os.path.splitext(os.path.basename(current))[1]
+        _, ext = os.path.splitext(current)
 
         if not ext:
             ext = ".exr"
 
-        expected += ".%{1}d{2}".format(
+        output_dir = os.path.dirname(get_output_path(task_id, component_name, version, ext))
+        output_sequence, _ = os.path.splitext(os.path.basename(nuke.scriptName()))
+
+        output_sequence += ".%{1}d{2}".format(
             instance[0].name(),
-            str(padding).zfill(2),
+            str(4).zfill(2),
             ext
         )
-        return expected
+
+        return output_dir + "/" + output_sequence

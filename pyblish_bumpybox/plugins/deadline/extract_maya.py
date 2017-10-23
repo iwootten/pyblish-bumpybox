@@ -5,6 +5,7 @@ import pymel.core
 from pymel import versions
 
 import pyblish.api
+from bait.paths import get_output_path
 
 
 class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
@@ -28,7 +29,18 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
 
         # Replace houdini frame padding with Deadline padding
         fmt = "{head}" + "#" * collection.padding + "{tail}"
-        data["job"]["OutputFilename0"] = collection.format(fmt)
+        output_sequence = os.path.basename(collection.format(fmt))
+        _, ext = os.path.splitext(output_sequence)
+
+        task_id = instance.context.data["ftrackData"]["Task"]["id"]
+        component_name = instance.data["name"]
+        version = instance.context.data["version"]
+
+        output_file = get_output_path(task_id, component_name, version, ext)
+        output_folder = os.path.dirname(output_file)
+
+        data["job"]["OutputFilename0"] = os.path.join(output_folder, output_sequence)
+
         data["job"]["Priority"] = instance.data["deadlinePriority"]
         data["job"]["Pool"] = instance.data["deadlinePool"]
         value = instance.data["deadlineConcurrentTasks"]
@@ -70,9 +82,7 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
         scene_file = instance.context.data["currentFile"]
         data["plugin"]["SceneFile"] = scene_file
         data["plugin"]["ProjectPath"] = os.path.dirname(scene_file)
-        data["plugin"]["OutputFilePath"] = os.path.join(
-            os.path.dirname(scene_file), "workspace"
-        )
+        data["plugin"]["OutputFilePath"] = os.path.dirname(output_folder)
 
         if current_renderer == "redshift":
             data['plugin']['Renderer'] = 'redshift'
