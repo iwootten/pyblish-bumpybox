@@ -1,4 +1,5 @@
 import pyblish.api
+import os
 
 
 class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
@@ -23,7 +24,6 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
 
         collection = instance.data["collection"]
 
-        output_file = collection.format("{head}0001.mov")
         start_index = str(list(collection.indexes)[0])
 
         job_data = instance.data["deadlineData"]["job"]
@@ -33,7 +33,11 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
         input_args = "-y -gamma 2.2 -framerate 25 -start_number {}".format(start_index)
         extra_info_key_value["FFMPEGInputArgs0"] = input_args
 
-        input_file = job_data["OutputFilename0"].replace("####", "%04d")
+        output_file = job_data["OutputFilename0"]
+        input_file = output_file.replace("####", "%04d")
+
+        output_basename, output_ext = os.path.splitext(output_file)
+        output_basename = output_basename.strip("#")
 
         if 'audio' in instance.context.data and instance.context.data['audio']['enabled']:
             audio_file = instance.context.data['audio']['filename']
@@ -47,7 +51,7 @@ class BumpyboxExtractMovie(pyblish.api.InstancePlugin):
                       "-timecode 00:00:00:01"
 
         extra_info_key_value["FFMPEGOutputArgs0"] = output_args
-        extra_info_key_value["FFMPEGOutput0"] = output_file
+        extra_info_key_value["FFMPEGOutput0"] = "{}{}".format(output_basename, "0001.mov")
 
         instance.data["deadlineData"]["job"]["ExtraInfoKeyValue"] = extra_info_key_value
 
