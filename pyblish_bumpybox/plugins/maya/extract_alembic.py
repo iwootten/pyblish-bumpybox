@@ -37,7 +37,8 @@ class BumpyboxMayaExtractAlembic(pyblish.api.InstancePlugin):
             msg = "Can't strip namespaces, because of conflicting root names."
             msg += " Nodes will be renamed."
             self.log.warning(msg)
-        cmd += " -uvWrite -worldSpace -wholeFrameGeo -eulerFilter "
+
+        cmd += " -uvWrite -worldSpace -wholeFrameGeo -eulerFilter -writeFaceSets -writeUVSets "
         cmd += "-writeVisibility {0} ".format(nodesString)
         path = list(instance.data["collection"])[0].replace("\\", "/")
         cmd += "-file \"{0}\"".format(path)
