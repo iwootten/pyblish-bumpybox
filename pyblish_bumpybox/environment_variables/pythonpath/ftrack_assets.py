@@ -70,9 +70,9 @@ class CacheAsset(GenericAsset):
                 dst_node = dst_map[dst_name]
 
                 if dst_node.nodeType() == "transform":
-                    for transform in ["translate", "rotate", "scale"]:
-                        src_attr = pm.PyNode(src_node.name() + "." + transform)
-                        dst_attr = pm.PyNode(dst_node.name() + "." + transform)
+                    for attribute in ["translate", "rotate", "scale", "visibility"]:
+                        src_attr = pm.PyNode(src_node.name() + "." + attribute)
+                        dst_attr = pm.PyNode(dst_node.name() + "." + attribute)
                         src_attr >> dst_attr
 
                 # Connect animation and worldspace placement with blendshape
