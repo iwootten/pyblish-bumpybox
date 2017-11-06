@@ -70,7 +70,7 @@ class CacheAsset(GenericAsset):
                 dst_node = dst_map[dst_name]
 
                 if dst_node.nodeType() == "transform":
-                    for transform in ["translate", "rotate", "scale"]:
+                    for transform in ["translate", "rotate", "scale", "visibility"]:
                         src_attr = pm.PyNode(src_node.name() + "." + transform)
                         dst_attr = pm.PyNode(dst_node.name() + "." + transform)
                         src_attr >> dst_attr
