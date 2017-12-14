@@ -5,21 +5,16 @@ class BumpyboxDeadlineExtractSuspended(pyblish.api.InstancePlugin):
     """ Option to suspend Deadline job on submission """
 
     order = pyblish.api.ExtractorOrder
-    label = "Suspend Deadline Job Initally"
+    label = "Suspend Deadline Job Initially"
     families = ["deadline"]
     active = False
     optional = True
 
     def process(self, instance):
+        deadline_data = instance.data.get(
+            "deadlineData", {"job": {}, "plugin": {}}
+        )
 
-        # getting job data
-        job_data = {}
-        plugin_data = {}
-        if instance.has_data('deadlineData'):
-            job_data = instance.data('deadlineData')['job'].copy()
-            plugin_data = instance.data('deadlineData')['plugin'].copy()
+        deadline_data["job"]["InitialStatus"] = "Suspended"
 
-        job_data["InitialStatus"] = "Suspended"
-
-        instance.data["deadlineData"] = {"job": job_data,
-                                         "plugin": plugin_data}
+        instance.data["deadlineData"] = deadline_data

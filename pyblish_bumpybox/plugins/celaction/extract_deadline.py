@@ -4,6 +4,9 @@ import pyblish.api
 import pyblish_standalone
 import pipeline_schema
 
+from bait.deadline import get_render_settings, get_deadline_data, format_frames
+from bait.ftrack.query_runner import QueryRunner
+
 
 class ExtractDeadline(pyblish.api.InstancePlugin):
 
@@ -13,37 +16,37 @@ class ExtractDeadline(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        job_data = {}
-        plugin_data = {}
-        if "deadlineData" in instance.data:
-            job_data = instance.data["deadlineData"]["job"].copy()
-            plugin_data = instance.data["deadlineData"]["plugin"].copy()
+        render_settings = get_render_settings("celaction")
 
-        job_data['Name'] = instance.data["name"]
-        job_data['Frames'] = '%s-%s' % (instance.data('start'),
-                                        instance.data('end'))
-        job_data['ChunkSize'] = 10
-        job_data['Group'] = 'celaction'
-        job_data['Pool'] = 'medium'
-        job_data['Plugin'] = 'CelAction'
+        existing_data = instance.data.get(
+            "deadlineData", {"job": {}, "plugin": {}}
+        )
+
+        runner = QueryRunner()
+        default_pool = runner.get_project_department(instance.context.data["ftrackData"]["Project"]["id"])
+
+        data = get_deadline_data(render_settings, existing_data)
+        existing_data["job"]["Pool"] = default_pool
 
         name = os.path.basename(instance.context.data["currentFile"])
         name = os.path.splitext(name)[0] + " - " + instance.data["name"]
-        job_data["Name"] = name
+        data["job"]["Name"] = name
+
+        data["job"]['Frames'] = format_frames(instance.data('start'), instance.data('end'))
 
         # get version data
-        version = 1
-        if instance.context.has_data('version'):
-            version = instance.context.data('version')
+        version = instance.context.data('version') if instance.context.has_data('version') else 1
 
         # get output filename
-        data = pipeline_schema.get_data()
-        data['extension'] = 'png'
-        data['output_type'] = 'img'
-        data['name'] = instance.data["name"]
-        data['version'] = version
-        output_path = pipeline_schema.get_path('output_sequence', data)
-        job_data['OutputFilename0'] = output_path.replace('%04d', '####')
+        out_data = pipeline_schema.get_data()
+        out_data['extension'] = 'png'
+        out_data['output_type'] = 'img'
+        out_data['name'] = instance.data["name"]
+        out_data['version'] = version
+        output_path = pipeline_schema.get_path('output_sequence', out_data)
+
+        data['job']['Plugin'] = 'CelAction'
+        data["job"]['OutputFilename0'] = output_path.replace('%04d', '####')
 
         # plugin data
         render_name_separator = '.'
@@ -61,7 +64,7 @@ class ExtractDeadline(pyblish.api.InstancePlugin):
 
             version_string = pipeline_schema.get_path('version', data)
             output_path = output_path.replace('.' + version_string, '')
-            job_data['OutputFilename0'] = output_path.replace('%04d', '####')
+            data["job"]['OutputFilename0'] = output_path.replace('%04d', '####')
 
             render_name_separator = '.%s.' % version_string
 
@@ -74,13 +77,12 @@ class ExtractDeadline(pyblish.api.InstancePlugin):
         args += ' -= AbsoluteFrameNumber=on -= PadDigits=4'
         args += ' -= ClearAttachment=on'
 
-        plugin_data['Arguments'] = args
+        data["plugin"]['Arguments'] = args
 
-        plugin_data['StartupDirectory'] = ''
-        plugin_data['RenderNameSeparator'] = render_name_separator
+        data["plugin"]['StartupDirectory'] = ''
+        data["plugin"]['RenderNameSeparator'] = render_name_separator
 
         # adding to instance
-        data = {'job': job_data, 'plugin': plugin_data}
         instance.set_data('deadlineData', value=data)
 
         # creating output path

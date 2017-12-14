@@ -6,6 +6,8 @@ from pymel import versions
 
 import pyblish.api
 from bait.paths import get_output_path
+from bait.deadline import get_render_settings, get_deadline_data, increase_chunk_size, format_frames
+from bait.ftrack.query_runner import QueryRunner
 
 
 class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
@@ -20,11 +22,19 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
 
         collection = instance.data["collection"]
 
-        data = instance.data.get(
+        existing_data = instance.data.get(
             "deadlineData", {"job": {}, "plugin": {}}
         )
 
-        # Setting job data.
+        runner = QueryRunner()
+        default_pool = runner.get_project_department(instance.context.data["ftrackData"]["Project"]["id"])
+        existing_data["job"]["Pool"] = default_pool
+
+        current_renderer = pymel.core.getAttr("defaultRenderGlobals.currentRenderer")
+        render_settings = get_render_settings("maya", current_renderer)
+
+        data = get_deadline_data(render_settings, existing_data)
+
         data["job"]["Plugin"] = "MayaBatch"
 
         # Replace houdini frame padding with Deadline padding
@@ -41,60 +51,25 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
 
         data["job"]["OutputFilename0"] = os.path.join(output_folder, output_sequence)
 
-        data["job"]["Priority"] = instance.data["deadlinePriority"]
-        data["job"]["Pool"] = instance.data["deadlinePool"]
-        value = instance.data["deadlineConcurrentTasks"]
-        data["job"]["ConcurrentTasks"] = value
-        data["job"]["LimitGroups"] = instance.data["deadlineLimits"]
-        data["job"]["Group"] = instance.data["deadlineGroup"]
-
         # Frame range
         render_globals = pymel.core.PyNode("defaultRenderGlobals")
         start_frame = int(render_globals.startFrame.get())
         end_frame = int(render_globals.endFrame.get())
         step_frame = int(render_globals.byFrameStep.get())
 
-        data["job"]["Frames"] = "{0}-{1}x{2}".format(
-            start_frame, end_frame, step_frame
+        data["job"]["Frames"] = format_frames(start_frame, end_frame, step_frame)
+
+        data['job']['ChunkSize'] = increase_chunk_size(
+            start_frame, end_frame, data["job"]["ChunkSize"], step_frame
         )
 
-        # Chunk size
-        data["job"]["ChunkSize"] = instance.data["deadlineChunkSize"]
-        if len(list(collection)) == 1:
-            data["job"]["ChunkSize"] = str(end_frame)
-        else:
-            tasks = (end_frame - start_frame + 1.0) / step_frame
-            chunks = (end_frame - start_frame + 1.0) / data["job"]["ChunkSize"]
-            # Deadline can only handle 5000 tasks maximum
-            if tasks > 5000 and chunks > 5000:
-                data["job"]["ChunkSize"] = str(int(math.ceil(tasks / 5000.0)))
-
-        # Setting plugin data
-        current_renderer = pymel.core.getAttr("defaultRenderGlobals.currentRenderer")
-
-        data["plugin"]["Renderer"] = "file"
-        data["plugin"]["UsingRenderLayers"] = 1
-        data["plugin"]["RenderLayer"] = instance[0].name()
-        data["plugin"]["Version"] = versions.flavor()
-        data["plugin"]["UseLegacyRenderLayers"] = 1
-        data["plugin"]["MaxProcessors"] = 0
-
         scene_file = instance.context.data["currentFile"]
+
         data["plugin"]["SceneFile"] = scene_file
         data["plugin"]["ProjectPath"] = os.path.dirname(scene_file)
         data["plugin"]["OutputFilePath"] = os.path.dirname(output_folder)
-
-        if current_renderer == "redshift":
-            data['plugin']['Renderer'] = 'redshift'
-            data['plugin']['RedshiftVerbose'] = 2
-            data["plugin"]["Animation"] = 1
-            data["plugin"]["StrictErrorChecking"] = 0
-
-        # Arnold plugin settings
-        if "arnold" in instance.data.get("families", []):
-            data["plugin"]["Renderer"] = "arnold"
-            data["plugin"]["ArnoldVerbose"] = 1
-            data["plugin"]["Animation"] = 1
+        data["plugin"]["RenderLayer"] = instance[0].name()
+        data["plugin"]["Version"] = versions.flavor()
 
         # Setting data
         instance.data["deadlineData"] = data

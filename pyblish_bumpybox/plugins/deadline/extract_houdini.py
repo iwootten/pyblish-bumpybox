@@ -2,6 +2,8 @@ import math
 
 import hou
 import pyblish.api
+from bait.deadline import get_render_settings, get_deadline_data, increase_chunk_size, format_frames
+from bait.ftrack.query_runner import QueryRunner
 
 
 class BumpyboxDeadlineExtractHoudini(pyblish.api.InstancePlugin):
@@ -17,21 +19,23 @@ class BumpyboxDeadlineExtractHoudini(pyblish.api.InstancePlugin):
         node = instance[0]
         collection = instance.data["collection"]
 
-        job_data = {}
-        plugin_data = {}
-        if "deadlineData" in instance.data:
-            job_data = instance.data["deadlineData"]["job"].copy()
-            plugin_data = instance.data["deadlineData"]["plugin"].copy()
+        existing_data = instance.data.get(
+            "deadlineData", {"job": {}, "plugin": {}}
+        )
+
+        render_settings = get_render_settings("houdini")
+        runner = QueryRunner()
+        default_pool = runner.get_project_department(instance.context.data["ftrackData"]["Project"]["id"])
+        existing_data["job"]["Pool"] = default_pool
+
+        data = get_deadline_data(render_settings, existing_data)
 
         # Setting job data.
-        job_data["Plugin"] = "Houdini"
+        data["job"]["Plugin"] = "Houdini"
 
         # Replace houdini frame padding with Deadline padding
         fmt = "{head}" + "#" * collection.padding + "{tail}"
-        job_data["OutputFilename0"] = collection.format(fmt)
-        job_data["Priority"] = instance.data["deadlinePriority"]
-        job_data["Pool"] = instance.data["deadlinePool"]
-        job_data["ConcurrentTasks"] = instance.data["deadlineConcurrentTasks"]
+        data["job"]["OutputFilename0"] = collection.format(fmt)
 
         # Frame range
         start_frame = int(node.parm("f1").eval())
@@ -41,27 +45,15 @@ class BumpyboxDeadlineExtractHoudini(pyblish.api.InstancePlugin):
         if node.parm("trange").eval() == 0:
             start_frame = end_frame = int(hou.frame())
 
-        job_data["Frames"] = "{0}-{1}x{2}".format(start_frame,
-                                                  end_frame,
-                                                  step_frame)
+        data["job"]["Frames"] = format_frames(start_frame, end_frame, step_frame)
 
-        # Chunk size
-        job_data["ChunkSize"] = instance.data["deadlineChunkSize"]
-        if len(list(collection)) == 1:
-            job_data["ChunkSize"] = str(end_frame)
-        else:
-            tasks = (end_frame - start_frame + 1.0) / step_frame
-            chunks = (end_frame - start_frame + 1.0) / job_data["ChunkSize"]
-            # Deadline can only handle 5000 tasks maximum
-            if tasks > 5000 and chunks > 5000:
-                job_data["ChunkSize"] = str(int(math.ceil(tasks / 5000.0)))
+        data['job']['ChunkSize'] = increase_chunk_size(
+            start_frame, end_frame, data["job"]["ChunkSize"], step_frame
+        )
 
         # Setting plugin data
-        plugin_data["OutputDriver"] = node.path()
-        plugin_data["Version"] = str(hou.applicationVersion()[0])
-        plugin_data["IgnoreInputs"] = "0"
-        plugin_data["SceneFile"] = instance.context.data["currentFile"]
+        data["plugin"]["OutputDriver"] = node.path()
+        data["plugin"]["Version"] = str(hou.applicationVersion()[0])
+        data["plugin"]["SceneFile"] = instance.context.data["currentFile"]
 
-        # Setting data
-        data = {"job": job_data, "plugin": plugin_data}
         instance.data["deadlineData"] = data

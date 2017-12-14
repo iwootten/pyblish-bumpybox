@@ -1,9 +1,9 @@
-import math
-
 import nuke
 import pyblish.api
 import os
 from bait.paths import get_output_path
+from bait.deadline import get_render_settings, get_deadline_data, format_frames, increase_chunk_size
+from bait.ftrack.query_runner import QueryRunner
 
 
 class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
@@ -21,26 +21,29 @@ class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
 
         collection = instance.data["collection"]
 
-        data = instance.data.get("deadlineData", {"job": {}, "plugin": {}})
+        render_settings = get_render_settings("nuke")
+
+        existing_data = instance.data.get(
+            "deadlineData", {"job": {}, "plugin": {}}
+        )
+
+        runner = QueryRunner()
+        default_pool = runner.get_project_department(instance.context.data["ftrackData"]["Project"]["id"])
+        existing_data["job"]["Pool"] = default_pool
+
+        data = get_deadline_data(render_settings, existing_data)
 
         # Setting job data.
         data["job"]["Plugin"] = "Nuke"
-        data["job"]["Priority"] = int(instance.data["deadlinePriority"])
-        data["job"]["Pool"] = instance.data["deadlinePool"]
-        data["job"]["Group"] = instance.data["deadlineGroup"]
-        data["job"]["ConcurrentTasks"] = int(
-            instance.data["deadlineConcurrentTasks"]
-        )
-        data["job"]["LimitGroups"] = instance.data["deadlineLimits"]
 
         # Replace houdini frame padding with Deadline padding
         fmt = "{head}" + "#" * collection.padding + "{tail}"
         output_sequence = os.path.basename(collection.format(fmt))
+        _, ext = os.path.splitext(output_sequence)
 
         task_id = instance.context.data["ftrackData"]["Task"]["id"]
         component_name = instance.data["name"]
         version = instance.context.data["version"]
-        _, ext = os.path.splitext(output_sequence)
 
         output_file = get_output_path(task_id, component_name, version, ext)
         output_folder = os.path.dirname(output_file)
@@ -56,29 +59,17 @@ class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
             first_frame = node["first"].value()
             last_frame = node["last"].value()
 
-        data["job"]["Frames"] = "{0}-{1}".format(
-            int(first_frame), int(last_frame)
-        )
+        data["job"]["Frames"] = format_frames(first_frame, last_frame)
 
-        # Chunk size
-        data["job"]["ChunkSize"] = int(instance.data["deadlineChunkSize"])
-        if len(list(collection)) == 1:
-            data["job"]["ChunkSize"] = str(int(last_frame))
-        else:
-            tasks = last_frame - first_frame + 1.0
-            chunks = last_frame - first_frame + 1.0
-            chunks /= data["job"]["ChunkSize"]
-            # Deadline can only handle 5000 tasks maximum
-            if tasks > 5000 and chunks > 5000:
-                data["job"]["ChunkSize"] = str(int(math.ceil(tasks / 5000.0)))
+        data['job']['ChunkSize'] = increase_chunk_size(
+            int(first_frame), int(last_frame), data["job"]["ChunkSize"]
+        )
 
         # Setting plugin data
         data["plugin"]["SceneFile"] = instance.context.data["currentFile"]
-        data["plugin"]["EnforceRenderOrder"] = True
         data["plugin"]["WriteNode"] = node.name()
         data["plugin"]["NukeX"] = nuke.env["nukex"]
         data["plugin"]["Version"] = nuke.NUKE_VERSION_STRING.split("v")[0]
-        data["plugin"]["EnablePathMapping"] = False
 
         # Setting data
         instance.data["deadlineData"] = data
