@@ -30,7 +30,9 @@ class BumpyboxMayaExtractPlayblast(pyblish.api.InstancePlugin):
             },
             'viewport2_options': {
                 "multiSampleEnable": True,
-                "multiSampleCount": 8
+                "multiSampleCount": 8,
+                "ssaoEnable": True,
+                "lineAAEnable": True
             },
             'camera_options': {
                 "panZoomEnabled": False
