@@ -14,6 +14,8 @@ class BumpyboxMayaExtractAlembic(pyblish.api.InstancePlugin):
     hosts = ["maya"]
 
     def process(self, instance):
+        if "remote" in instance.data["families"]:
+            return
 
         # Validate whether we can strip namespaces.
         nodesString = ""
