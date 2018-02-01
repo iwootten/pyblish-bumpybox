@@ -21,18 +21,6 @@ class MayaExtractRemoteAlembic(pyblish.api.InstancePlugin):
         if "local" in instance.data["families"]:
             return
 
-        # Validate whether we can strip namespaces.
-        nodes_string = ""
-        strip_namespaces = True
-        root_names = []
-
-        for member in instance[0]:
-            nodes_string += "-root %s " % member.name()
-            if member.name().split(":")[-1] not in root_names:
-                root_names.append(member.name().split(":")[-1])
-            else:
-                strip_namespaces = False
-
         # Generate export command.
         frame_start = int(pymel.core.playbackOptions(q=True, min=True))
         frame_end = int(pymel.core.playbackOptions(q=True, max=True))
@@ -44,13 +32,7 @@ class MayaExtractRemoteAlembic(pyblish.api.InstancePlugin):
         )
         deadline_arguments['job']['frames'] = format_frames(frame_start, frame_end)
 
-        if not strip_namespaces:
-            msg = "Can't strip namespaces, because of conflicting root names."
-            msg += " Nodes will be renamed."
-            self.log.warning(msg)
-
-        deadline_arguments['plugin']['StripNamespaces'] = strip_namespaces
-        deadline_arguments['plugin']['WriteVisibility'] = nodes_string
+        deadline_arguments['plugin']['WriteVisibility'] = True
 
         component_name = instance.data["name"]
         version = instance.context.data["version"]
@@ -64,7 +46,7 @@ class MayaExtractRemoteAlembic(pyblish.api.InstancePlugin):
         deadline_arguments["job"]["Plugin"] = "MayaBatch"
         deadline_arguments['job']['OutputFilename0'] = output_path
 
-        deadline_arguments['plugin']['AlembicSelection'] = instance[0]
+        deadline_arguments['plugin']['AlembicSelection'] = instance[0][0].name()
         deadline_arguments['plugin']['OutputFilePath'] = output_dir
         deadline_arguments['plugin']['OutputFile'] = output_file
 
