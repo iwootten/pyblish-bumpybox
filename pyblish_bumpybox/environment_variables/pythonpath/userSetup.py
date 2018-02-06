@@ -7,7 +7,6 @@ import maya.cmds as cmds
 import pyblish.api
 import pyblish_lite
 
-
 # Quiet load alembic plugins
 pm.loadPlugin('AbcExport.mll', quiet=True)
 pm.loadPlugin('AbcImport.mll', quiet=True)
@@ -137,14 +136,26 @@ pyblish.api.register_gui("pyblish_lite")
 # pyblish_lite settings
 pyblish_lite.settings.InitialTab = "overview"
 
-# Adding ftrack assets if import is available.
-try:
-    imp.find_module("ftrack_connect")
-    imp.find_module("ftrack_connect_maya")
 
-    import ftrack_assets
-    import ftrack_init
-    ftrack_assets.register_assets()
-    ftrack_init.init()
-except ImportError as error:
-    print "Could not find ftrack modules: " + str(error)
+def startUp():
+    # Adding ftrack assets if import is available.
+    try:
+        imp.find_module("ftrack_connect")
+        imp.find_module("ftrack_connect_maya")
+        imp.find_module("check_audio")
+
+        import ftrack_assets
+        import ftrack_init
+
+        ftrack_assets.register_assets()
+        ftrack_init.init()
+
+        if os.getenv("PIPELINE_ENV", "dev") == "prod":
+            import check_audio
+            check_audio.prompt_to_update()
+
+    except ImportError as error:
+        print "Could not find ftrack modules: " + str(error)
+
+
+pm.evalDeferred('startUp()')
