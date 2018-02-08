@@ -81,7 +81,9 @@ class BumpyboxMayaExtractPlayblast(pyblish.api.InstancePlugin):
             "-y",
             "-vf", text_string,
             "-crf", "1",
+            "-refs", "1",
             "-codec:a", "copy",
+            "-x264opts", "b-pyramid=0",
             filename_with_burnin
         ]
 
