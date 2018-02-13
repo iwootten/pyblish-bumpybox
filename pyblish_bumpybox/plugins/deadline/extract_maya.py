@@ -1,4 +1,3 @@
-import math
 import os
 
 import pymel.core
@@ -19,6 +18,8 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
     hosts = ["maya"]
 
     def process(self, instance):
+        if "alembic" in instance.data["families"]:
+            return
 
         collection = instance.data["collection"]
 
