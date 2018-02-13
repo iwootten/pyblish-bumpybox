@@ -77,7 +77,7 @@ class CacheAsset(GenericAsset):
 
                 # Connect animation and worldspace placement with blendshape
                 if dst_node.nodeType() == "mesh":
-                    pm.blendShape(src_node, dst_node, weight=[(0, 1.0)], origin="world")
+                    pm.blendShape(src_node, dst_node, weight=[(0, 1.0)], origin="world", parallel=True)
 
     def changeVersion(self, iAObj=None, applicationObject=None):
         result = GenericAsset.changeVersion(self, iAObj, applicationObject)
