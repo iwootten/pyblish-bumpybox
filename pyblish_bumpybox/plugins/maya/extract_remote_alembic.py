@@ -52,10 +52,23 @@ class MayaExtractRemoteAlembic(pyblish.api.InstancePlugin):
         deadline_arguments["job"]["Plugin"] = "MayaBatch"
         deadline_arguments['job']['OutputFilename0'] = output_path
 
-        deadline_arguments['plugin']['AlembicSelection'] = instance[0][0].name()
+        selected_nodes = []
+        root_nodes = []
+        strip_namespaces = True
+
+        for item in instance[0]:
+            selected_nodes.append(item.name())
+            root_node = item.name().split(":")[-1]
+            if root_node not in selected_nodes:
+                root_nodes.append(root_node)
+            else:
+                strip_namespaces = False
+
+        deadline_arguments['plugin']['AlembicSelection'] = ",".join(selected_nodes)
         deadline_arguments['plugin']['OutputFilePath'] = output_dir
         deadline_arguments['plugin']['OutputFile'] = output_file
 
+        deadline_arguments['plugin']['StripNamespaces'] = strip_namespaces
         deadline_arguments['plugin']['Camera'] = ""
         deadline_arguments['plugin']['Camera0'] = ""
         deadline_arguments['plugin']['SceneFile'] = instance.context.data['currentFile']
