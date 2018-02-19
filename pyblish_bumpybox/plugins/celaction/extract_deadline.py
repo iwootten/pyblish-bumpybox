@@ -27,6 +27,7 @@ class ExtractDeadline(pyblish.api.InstancePlugin):
 
         data = get_deadline_data(render_settings, existing_data)
         existing_data["job"]["Pool"] = default_pool
+        runner.close_session()
 
         name = os.path.basename(instance.context.data["currentFile"])
         name = os.path.splitext(name)[0] + " - " + instance.data["name"]

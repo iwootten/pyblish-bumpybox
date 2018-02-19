@@ -30,6 +30,7 @@ class BumpyboxDeadlineExtractNuke(pyblish.api.InstancePlugin):
         runner = QueryRunner()
         default_pool = runner.get_project_department(instance.context.data["ftrackData"]["Project"]["id"])
         existing_data["job"]["Pool"] = default_pool
+        runner.close_session()
 
         data = get_deadline_data(render_settings, existing_data)
 

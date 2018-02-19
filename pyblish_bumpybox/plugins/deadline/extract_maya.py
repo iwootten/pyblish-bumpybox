@@ -29,6 +29,7 @@ class BumpyboxDeadlineExtractMaya(pyblish.api.InstancePlugin):
         runner = QueryRunner()
         default_pool = runner.get_project_department(instance.context.data["ftrackData"]["Project"]["id"])
         existing_data["job"]["Pool"] = default_pool
+        runner.close_session()
 
         current_renderer = pymel.core.getAttr("defaultRenderGlobals.currentRenderer")
         render_settings = get_render_settings("maya", current_renderer)

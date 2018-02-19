@@ -1,5 +1,3 @@
-import math
-
 import hou
 import pyblish.api
 from bait.deadline import get_render_settings, get_deadline_data, increase_chunk_size, format_frames
@@ -29,6 +27,7 @@ class BumpyboxDeadlineExtractHoudini(pyblish.api.InstancePlugin):
         existing_data["job"]["Pool"] = default_pool
 
         data = get_deadline_data(render_settings, existing_data)
+        runner.close_session()
 
         # Setting job data.
         data["job"]["Plugin"] = "Houdini"
