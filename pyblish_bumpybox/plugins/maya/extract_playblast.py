@@ -49,8 +49,7 @@ class BumpyboxMayaExtractPlayblast(pyblish.api.InstancePlugin):
             kwargs['sound'] = instance.context.data['audio']['node']
 
         # Create quicktime from viewport settings
-        capture(
-            instance[0].getTransform().name(),
+        capture(instance[0].getTransform().name(), 1920, 1080,
             **kwargs
         )
 
