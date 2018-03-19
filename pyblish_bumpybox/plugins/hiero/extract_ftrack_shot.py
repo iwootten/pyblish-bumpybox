@@ -16,7 +16,7 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
     def parse_shot_elements(self, item_name):
         episode_name = False
         sequence_name = False
-        shot_name = False
+        shot_name = item_name
 
         if "--" in item_name:
             name_split = item_name.split("--")
@@ -62,7 +62,6 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
         item = instance[0]
 
         shot_elements = self.parse_shot_elements(item.name())
-
         parents = self.query_runner.get_parents(task)
 
         self.log.info("Parents " + str(parents))
@@ -75,8 +74,11 @@ class BumpyboxHieroExtractFtrackShot(pyblish.api.InstancePlugin):
 
         sequence = instance.context.data("ftrackSequence")
 
-        # Setup all the parents to this task
-        shot = self.query_runner.get_or_create_shot(sequence, shot_elements['shot_name'])
+        if sequence:
+            # Setup all the parents to this task
+            shot = self.query_runner.get_or_create_shot(sequence, shot_elements['shot_name'])
+        else:
+            shot = self.query_runner.get_or_create_shot(parents[-2], shot_elements['shot_name'])
 
         return shot
 

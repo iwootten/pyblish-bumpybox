@@ -23,19 +23,19 @@ class BumpyboxHieroExtractFtrackThumbnail(pyblish.api.InstancePlugin):
         item = instance[0]
         shot = instance.data["ftrackShot"]
 
-        nukeWriter = hiero.core.nuke.ScriptWriter()
+        nuke_writer = hiero.core.nuke.ScriptWriter()
 
         # Getting top most track with media.
         seq = item.parent().parent()
         item = seq.trackItemAt(item.timelineIn())
 
         root_node = hiero.core.nuke.RootNode(1, 1, fps=seq.framerate())
-        nukeWriter.addNode(root_node)
+        nuke_writer.addNode(root_node)
 
         handles = instance.data["handles"]
 
         item.addToNukeScript(
-            script=nukeWriter,
+            script=nuke_writer,
             firstFrame=1,
             includeRetimes=True,
             retimeMethod="Frame",
@@ -53,27 +53,29 @@ class BumpyboxHieroExtractFtrackThumbnail(pyblish.api.InstancePlugin):
         )
 
         fmt = hiero.core.Format(300, 200, 1, "thumbnail")
-        fmt.addToNukeScript(script=nukeWriter)
+        fmt.addToNukeScript(script=nuke_writer)
 
         write_node = hiero.core.nuke.WriteNode(output_path)
         write_node.setKnob("file_type", "png")
-        nukeWriter.addNode(write_node)
+        nuke_writer.addNode(write_node)
 
         script_path = output_path.replace(".png", ".nk")
-        nukeWriter.writeToDisk(script_path)
-        logFileName = output_path.replace(".png", ".log")
+        nuke_writer.writeToDisk(script_path)
+        log_file_name = output_path.replace(".png", ".log")
         process = hiero.core.nuke.executeNukeScript(
             script_path,
-            open(logFileName, "w")
+            open(log_file_name, "w")
         )
 
         while process.poll() is None:
             time.sleep(0.5)
 
-        if os.path.exists(output_path):
+        thumbnail_path = output_path % 1
+
+        if os.path.exists(thumbnail_path):
             self.log.info("Thumbnail rendered successfully!")
 
             # Creating thumbnail
-            shot.createThumbnail(output_path)
+            shot.create_thumbnail(thumbnail_path)
         else:
-            self.log.error("Thumbnail failed to render")
+            self.log.error("Thumbnail failed to render: {}".format(thumbnail_path))

@@ -1,5 +1,5 @@
 import pyblish.api
-import ftrack
+import ftrack_api
 
 
 class BumpyboxHieroExtractFtrackTasks(pyblish.api.Extractor):
@@ -14,17 +14,10 @@ class BumpyboxHieroExtractFtrackTasks(pyblish.api.Extractor):
     order = pyblish.api.ExtractorOrder + 0.1
     optional = True
 
-    def getTaskTypeByName(self, name):
-        for t in ftrack.getTaskTypes():
-            if t.getName().lower() == name.lower():
-                return t
-
-        return None
-
     def process(self, instance):
 
         shot = instance.data["ftrackShot"]
-        tasks = shot.getTasks()
+        tasks = shot['children']
 
         for tag in instance[0].tags():
             data = tag.metadata().dict()
@@ -32,19 +25,24 @@ class BumpyboxHieroExtractFtrackTasks(pyblish.api.Extractor):
                 task = None
 
                 for t in tasks:
-                    if t.getName().lower() == tag.name().lower():
+                    if t['name'].lower() == tag.name().lower():
                         task = t
 
                 if not task:
                     try:
-                        task = shot.createTask(
-                            tag.name().lower(),
-                            taskType=self.getTaskTypeByName(tag.name())
-                        )
+                        with ftrack_api.Session() as session:
+                            task_type = session.query("Type where name='{}'".format(tag.name())).one()
+
+                            task = session.create('Task', {
+                                "name": tag.name().lower(),
+                                "parent": shot,
+                                "type": task_type
+                            })
+                            session.commit()
                     except Exception as e:
                         msg = "Could not create task \"{0}\": {1}"
-                        self.log.error(msg.format(tag.name(), e))
+                        self.log.error(msg.format(tag.name().lower(), e))
 
                 if task:
                     # Store task id on tag
-                    tag.metadata().setValue("tag.id", task.getId())
+                    tag.metadata().setValue("tag.id", task['id'])
