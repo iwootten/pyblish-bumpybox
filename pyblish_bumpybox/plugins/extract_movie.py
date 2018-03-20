@@ -22,15 +22,11 @@ class ExtractMovie(pyblish.api.InstancePlugin):
             self.log.info(msg)
             return
 
-        collection = instance.data["collection"]
-
-        start_index = str(list(collection.indexes)[0])
-
         job_data = instance.data["deadlineData"]["job"]
 
         extra_info_key_value = {}
 
-        input_args = "-y -gamma 2.2 -framerate 25 -start_number {}".format(start_index)
+        input_args = "-y -gamma 2.2 -framerate 25 -start_number {}".format(instance.data('start'))
         extra_info_key_value["FFMPEGInputArgs0"] = input_args
 
         output_file = job_data["OutputFilename0"]

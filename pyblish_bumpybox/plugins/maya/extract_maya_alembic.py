@@ -50,8 +50,10 @@ class ExtractMayaAlembic(pyblish.api.InstancePlugin):
 
         # Turn off viewport updating while exporting.
         pymel.core.general.refresh(suspend=True)
+
         try:
             pymel.core.AbcExport(j=cmd)
         except Exception as e:
             raise e
+
         pymel.core.general.refresh(suspend=False)

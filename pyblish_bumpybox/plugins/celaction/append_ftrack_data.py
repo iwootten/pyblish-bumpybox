@@ -15,7 +15,8 @@ class AppendFtrackAudio(pyblish.api.ContextPlugin):
             asset = task.getParent().getAsset("audio", "audio")
             component = asset.getVersions()[-1].getComponent()
             audio_file = component.getFilesystemPath()
-            context.data["audio"] = audio_file
+            context.data["audio"]['filename'] = audio_file
+            context.data["audio"]['enabled'] = True
         except:
             self.log.warning("Couldn't find any audio file on Ftrack.")
 
