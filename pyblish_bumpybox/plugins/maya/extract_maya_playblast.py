@@ -30,7 +30,6 @@ class ExtractMayaPlayblast(pyblish.api.InstancePlugin):
             'viewer': False,
             'show_ornaments': False,
             'overwrite': True,
-            'off_screen': True,
             'viewport_options': {
                  "rendererName": "vp2Renderer"
             },
